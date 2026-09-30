@@ -1,292 +1,75 @@
-<!DOCTYPE html>			
-<html lang="ja">			
-			
-<head>			
-			
-<meta charset="UTF-8">			
-			
-<meta name="viewport"			
-content="width=device-width, initial-scale=1.0">			
-			
-<title>JR2GKZ ESP32 BLE TEST</title>			
-			
-<style>			
-			
-body {			
-background:#121212;			
-color:white;			
-font-family:sans-serif;			
-text-align:center;			
-padding:30px;			
-}			
-			
-button {			
-font-size:20px;			
-padding:15px 25px;			
-margin:10px;			
-}			
-			
-#status {			
-margin:20px;			
-font-size:18px;			
-}			
-			
-#log {			
-margin-top:20px;			
-text-align:left;			
-background:#000;			
-padding:15px;			
-min-height:150px;			
-white-space:pre-wrap;			
-}			
-			
-</style>			
-			
-</head>			
-			
-<body>			
-			
-<h1>JR2GKZ ESP32 BLE</h1>			
-			
-<button id="connect">			
-Bluetooth 接続			
-</button>			
-			
-<br>			
-			
-<button id="hello">			
-HELLO送信			
-</button>			
-			
-<div id="status">			
-未接続			
-</div>			
-			
-<div id="log">			
-ログ：			
-</div>			
-			
-<script>			
-			
-const SERVICE_UUID =			
-6e400001-b5a3-f393-e0a9-e50e24dcca9e;			
-			
-const RX_UUID =			
-6e400002-b5a3-f393-e0a9-e50e24dcca9e;			
-			
-const TX_UUID =			
-6e400003-b5a3-f393-e0a9-e50e24dcca9e;			
-			
-let device = null;			
-let rxCharacteristic = null;			
-let txCharacteristic = null;			
-			
-			
-function log(text) {			
-			
-const logElement =			
-document.getElementById("log");			
-			
-logElement.innerText +=			
-\n + text;			
-			
-console.log(text);			
-}			
-			
-			
-document.getElementById("connect")			
-.addEventListener("click", async () => {			
-			
-try {			
-			
-document.getElementById("status")			
-.innerText =			
-スキャン中...;			
-			
-log("BLEデバイスを検索中");			
-			
-			
-// ESP32検索			
-			
-device =			
-await navigator.bluetooth.requestDevice({			
-			
-filters: [			
-{			
-services: [SERVICE_UUID]			
-}			
-],			
-			
-optionalServices: [			
-SERVICE_UUID			
-]			
-			
-});			
-			
-			
-log(			
-発見:  +			
-device.name			
-);			
-			
-			
-document.getElementById("status")			
-.innerText =			
-GATT接続中...;			
-			
-			
-// GATT接続			
-			
-const server =			
-await device.gatt.connect();			
-			
-			
-log("GATT接続成功");			
-			
-			
-// Service取得			
-			
-const service =			
-await server.getPrimaryService(			
-SERVICE_UUID			
-);			
-			
-log("Service取得成功");			
-			
-			
-// RX			
-			
-rxCharacteristic =			
-await service.getCharacteristic(			
-RX_UUID			
-);			
-			
-log("RX Characteristic取得成功");			
-			
-			
-// TX			
-			
-txCharacteristic =			
-await service.getCharacteristic(			
-TX_UUID			
-);			
-			
-log("TX Characteristic取得成功");			
-			
-			
-// Notify開始			
-			
-await txCharacteristic.startNotifications();			
-			
-log("Notify開始");			
-			
-			
-txCharacteristic.addEventListener(			
-characteristicvaluechanged,			
-event => {			
-			
-const decoder =			
-new TextDecoder();			
-			
-const value =			
-decoder.decode(			
-event.target.value			
-);			
-			
-log(			
-ESP32 → iPhone :  +			
-value			
-);			
-}			
-);			
-			
-			
-document.getElementById("status")			
-.innerText =			
-接続完了！;			
-			
-			
-// 切断監視			
-			
-device.addEventListener(			
-gattserverdisconnected,			
-() => {			
-			
-document.getElementById("status")			
-.innerText =			
-切断されました;			
-			
-log("BLE切断");			
-			
-}			
-);			
-			
-			
-} catch(error) {			
-			
-console.error(error);			
-			
-document.getElementById("status")			
-.innerText =			
-接続失敗;			
-			
-log(			
-ERROR:  +			
-error.name +			
- /  +			
-error.message			
-);			
-			
-}			
-			
-});			
-			
-			
-document.getElementById("hello")			
-.addEventListener("click", async () => {			
-			
-try {			
-			
-if (!rxCharacteristic) {			
-			
-alert(			
-先にBluetooth接続してください			
-);			
-			
-return;			
-}			
-			
-			
-const encoder =			
-new TextEncoder();			
-			
-const data =			
-encoder.encode("HELLO");			
-			
-			
-await rxCharacteristic.writeValue(			
-data			
-);			
-			
-			
-log(			
-iPhone → ESP32 : HELLO			
-);			
-			
-			
-} catch(error) {			
-			
-log(			
-送信ERROR:  +			
-error.message			
-);			
-			
-}			
-			
-});			
-			
-</script>			
-			
-</body>			
-</html>			
-			
+<!DOCTYPE html>				
+<html lang="ja">				
+<head>				
+<meta charset="UTF-8">				
+<meta name="viewport" content="width=device-width, initial-scale=1.0">				
+<title>ESP32 Bluetooth Connection Test</title>				
+<style>				
+body {				
+background-color: #121212;				
+color: #ffffff;				
+font-family: sans-serif;				
+text-align: center;				
+padding-top: 50px;				
+}				
+#connect-btn {				
+background-color: #00ff00;				
+color: #000000;				
+font-size: 20px;				
+font-weight: bold;				
+padding: 15px 30px;				
+border: none;				
+border-radius: 8px;				
+cursor: pointer;				
+}				
+#status {				
+margin-top: 20px;				
+font-size: 18px;				
+color: #ffaa00;				
+}				
+</style>				
+</head>				
+<body>				
+				
+<h1>ESP32 BLE 接続テスト</h1>				
+				
+<!-- 接続ボタン -->				
+<button id="connect-btn">Bluetooth 接続 (ESP32)</button>				
+<div id="status">ステータス: 未接続</div>				
+				
+<script>				
+const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";				
+				
+document.getElementById('connect-btn').addEventListener('click', async () => {				
+try {				
+document.getElementById('status').innerText = "ステータス: スキャン中...";				
+console.log('Bluetoothデバイスをスキャン中...');				
+				
+// ★フィルターを撤廃し、周辺の全デバイスを表示して選択させる				
+const device = await navigator.bluetooth.requestDevice({				
+acceptAllDevices: true,				
+optionalServices: [SERVICE_UUID]				
+});				
+				
+document.getElementById('status').innerText = "ステータス: 接続中...";				
+console.log('GATTサーバーに接続中...');				
+const server = await device.gatt.connect();				
+				
+document.getElementById('status').innerText = "ステータス: 接続完了！";				
+alert('Bluetooth接続に成功しました！');				
+				
+device.addEventListener('gattserverdisconnected', () => {				
+document.getElementById('status').innerText = "ステータス: 切断されました";				
+});				
+				
+} catch (error) {				
+console.error('エラー:', error);				
+document.getElementById('status').innerText = "ステータス: 接続失敗";				
+alert('接続エラー: ' + error);				
+}				
+});				
+</script>				
+				
+</body>				
+</html>				
+				
