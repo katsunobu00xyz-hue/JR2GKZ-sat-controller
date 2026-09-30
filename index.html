@@ -1,352 +1,75 @@
-<!DOCTYPE html>										
-<html lang="ja">										
-<head>										
-<meta charset="UTF-8">										
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">										
-<title>JR2GKZ Satellite & Doppler Station</title>										
-<!-- 軌道計算用ライブラリ satellite.js -->										
-<script src="https://cdnjs.cloudflare.com/ajax/libs/satellite.js/4.0.0/satellite.min.js"></script>										
-<style>										
-:root {										
---bg-color: #121212;										
---card-bg: #1e1e1e;										
---accent-green: #00ff66;										
---text-main: #e0e0e0;										
---text-muted: #888888;										
---border-color: #333333;										
-}										
-body {										
-background-color: var(--bg-color);										
-color: var(--text-main);										
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;										
-margin: 0;										
-padding: 12px;										
-box-sizing: border-box;										
-}										
-h1 {										
-color: var(--accent-green);										
-text-align: center;										
-font-size: 1.2rem;										
-margin-bottom: 12px;										
-}										
-.card {										
-background-color: var(--card-bg);										
-border-radius: 12px;										
-padding: 12px;										
-margin-bottom: 12px;										
-box-shadow: 0 4px 6px rgba(0,0,0,0.3);										
-border: 1px solid var(--border-color);										
-}										
-.btn {										
-background-color: var(--accent-green);										
-color: #000;										
-border: none;										
-border-radius: 8px;										
-padding: 12px;										
-font-size: 1rem;										
-font-weight: bold;										
-width: 100%;										
-cursor: pointer;										
-text-align: center;										
-margin-top: 4px;										
-}										
-.label {										
-font-size: 0.75rem;										
-color: var(--text-muted);										
-margin-bottom: 4px;										
-}										
-.value {										
-font-size: 1.1rem;										
-font-weight: bold;										
-color: var(--accent-green);										
-}										
-select, input {										
-width: 100%;										
-background-color: #2a2a2a;										
-color: #fff;										
-border: 1px solid var(--border-color);										
-border-radius: 6px;										
-padding: 8px;										
-font-size: 1rem;										
-margin-top: 4px;										
-box-sizing: border-box;										
-}										
-.flex-row {										
-display: flex;										
-gap: 8px;										
-}										
-.flex-col {										
-flex: 1;										
-}										
-table {										
-width: 100%;										
-font-size: 0.8rem;										
-border-collapse: collapse;										
-margin-top: 8px;										
-}										
-th, td {										
-border-bottom: 1px solid var(--border-color);										
-padding: 6px;										
-text-align: left;										
-}										
-th { color: var(--text-muted); }										
-</style>										
-</head>										
-<body>										
-										
-<h1>🛰️ JR2GKZ Sat & Doppler Station</h1>										
-										
-<!-- Bluetooth 接続 -->										
-<div class="card">										
-<button class="btn" id="btConnectBtn">Bluetooth 接続 (ESP32)</button>										
-<div id="btStatus" class="label" style="text-align: center; margin-top: 6px;">未接続</div>										
-</div>										
-										
-<!-- 衛星選択 & 時間 -->										
-<div class="card">										
-<div class="label">対象衛星</div>										
-<select id="satSelect">										
-<option value="RS-44">RS-44 (DOSAAF-85)</option>										
-<option value="FO-29">FO-29 (Fuji-3)</option>										
-<option value="JO-97">JO-97 (TEN-DOS)</option>										
-<option value="AO-73">AO-73 (FUNcube-1)</option>										
-<option value="ISS">ISS (International Space Station)</option>										
-</select>										
-<div style="margin-top: 8px;">										
-<div class="label">UTC / JST Clock</div>										
-<div id="clockDisplay" class="value" style="font-size: 0.95rem;">--:--:-- UTC / --:--:-- JST</div>										
-</div>										
-</div>										
-										
-<!-- 位置・コンパス情報 -->										
-<div class="card">										
-<div class="flex-row">										
-<div class="flex-col">										
-<div class="label">運用地情報</div>										
-<div class="value" style="font-size: 0.85rem;">Ota-ku, Tokyo (PM95ur)<br>JCC: 100111</div>										
-</div>										
-<div class="flex-col" style="text-align: right;">										
-<div class="label">スマホ方位 (コンパス)</div>										
-<div id="compassVal" class="value">--°</div>										
-<button onclick="initCompass()" style="font-size:0.7rem; padding:4px; margin-top:4px; background:#333; color:#fff; border:none; border-radius:4px;">コンパス有効化</button>										
-</div>										
-</div>										
-</div>										
-										
-<!-- リアルタイム追尾 (方位・仰角) -->										
-<div class="card" style="text-align: center;">										
-<div class="label">アンテナ方位 / 仰角 (リアルタイム)</div>										
-<div style="font-size: 1.8rem; font-weight: bold; margin: 8px 0;">										
-AZ: <span id="azVal">--.-</span>° / EL: <span id="elVal">--.-</span>°										
-</div>										
-</div>										
-										
-<!-- パス予測リスト (AOS / MEL / LOS) -->										
-<div class="card">										
-<div class="label">今後の通過予測パス (AOS / MEL / LOS)</div>										
-<table id="passTable">										
-<thead>										
-<tr>										
-<th>AOS (見出)</th>										
-<th>MEL (最大仰)</th>										
-<th>LOS (見終)</th>										
-</tr>										
-</thead>										
-<tbody id="passTableBody">										
-<tr><td colspan="3" style="text-align: center;">軌道計算中...</td></tr>										
-</tbody>										
-</table>										
-</div>										
-										
-<!-- 交信ログ機能 (QSO Logger) -->										
-<div class="card">										
-<div class="label">📝 QSO ログ記録</div>										
-<div style="margin-top: 4px;">										
-<input type="text" id="callsignInput" placeholder="相手局コールサイン (例: JA1ABC)">										
-</div>										
-<div class="flex-row" style="margin-top: 6px;">										
-<div class="flex-col">										
-<div class="label">モード</div>										
-<select id="logMode">										
-<option value="SSB">SSB</option>										
-<option value="CW">CW</option>										
-<option value="FT8">FT8</option>										
-<option value="FM">FM</option>										
-</select>										
-</div>										
-<div class="flex-col">										
-<div class="label">レポート (RST)</div>										
-<select id="logRst">										
-<option value="59 / 59">59 / 59</option>										
-<option value="599 / 599">599 / 599</option>										
-<option value="57 / 57">57 / 57</option>										
-<option value="55 / 55">55 / 55</option>										
-</select>										
-</div>										
-</div>										
-<div style="margin-top: 6px;">										
-<div class="label">周波数帯</div>										
-<select id="logBand">										
-<option value="144/430MHz (V/U)">144 / 430 MHz (V/U)</option>										
-<option value="430/1200MHz (U/SHF)">430 / 1200 MHz (U/S)</option>										
-<option value="144MHz">144 MHz</option>										
-<option value="430MHz">430 MHz</option>										
-</select>										
-</div>										
-<button class="btn" onclick="saveQso()">CSVファイルとしてログ保存</button>										
-<div id="logStatus" class="label" style="margin-top: 6px; text-align: center; color: var(--accent-green);"></div>										
-</div>										
-										
-<script>										
-// 大田区の正確な座標 (北緯35.56°, 東経135.71° → 修正: 139.71°)										
-const observerLat = 35.56;										
-const observerLon = 139.71;										
-const observerAlt = 0.03; // km										
-										
-// 時計更新										
-setInterval(() => {										
-const now = new Date();										
-document.getElementById('clockDisplay').innerText = `${now.toUTCString().slice(17, 25)} UTC / ${now.toLocaleTimeString('ja-JP')} JST`;										
-}, 1000);										
-										
-// スマホコンパス初期化（iOS 13+対応）										
-function initCompass() {										
-if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {										
-DeviceOrientationEvent.requestPermission().then(response => {										
-if (response === 'granted') {										
-window.addEventListener('deviceorientation', handleOrientation);										
-alert('コンパスを有効化しました');										
-}										
-}).catch(console.error);										
-} else if (window.DeviceOrientationEvent) {										
-window.addEventListener('deviceorientation', handleOrientation);										
-alert('コンパスを有効化しました');										
-} else {										
-alert('このブラウザはコンパスセンサーに対応していません');										
-}										
-}										
-										
-function handleOrientation(event) {										
-let heading = event.alpha; // 北を基準とした回転角度 (0-360)										
-if (event.webkitCompassHeading) {										
-heading = event.webkitCompassHeading; // iOS Safari用補正										
-}										
-if (heading !== null) {										
-let deg = Math.round(heading);										
-let dirName = "";										
-if (deg >= 337.5 || deg < 22.5) dirName = "N (北)";										
-else if (deg >= 22.5 && deg < 67.5) dirName = "NE (北東)";										
-else if (deg >= 67.5 && deg < 112.5) dirName = "E (東)";										
-else if (deg >= 112.5 && deg < 157.5) dirName = "SE (南東)";										
-else if (deg >= 157.5 && deg < 202.5) dirName = "S (南)";										
-else if (deg >= 202.5 && deg < 247.5) dirName = "SW (南西)";										
-else if (deg >= 247.5 && deg < 292.5) dirName = "W (西)";										
-else dirName = "NW (北西)";										
-										
-document.getElementById('compassVal').innerText = `${deg}° (${dirName})`;										
-}										
-}										
-										
-// TLEサンプルデータ（主要アマチュア無線衛星）										
-const tleData = {										
-RS-44: ["1 45119U 20005G   26088.54321123  .00000123  00000-0  67890-4 0  9999", "2 45119  82.5123 123.4567 0005432 123.4567 236.7890 12.4567891212345"],										
-FO-29: ["1 24278U 96046B   26088.12345678  .00000089  00000-0  54320-4 0  9998", "2 24278  98.5678 234.5678 0012345 45.6789 314.5678 14.3123456712345"],										
-JO-97: ["1 44881U 19093B   26088.67890123  .00000234  00000-0  89012-4 0  9997", "2 44881  97.3456 345.6789 0011223 89.1234 271.2345 14.2345678912345"],										
-AO-73: ["1 39444U 13066U   26088.45678901  .00000156  00000-0  43210-4 0  9996", "2 39444  98.0123  45.6789 0015678 123.4567 236.7890 14.5678901212345"],										
-ISS:   ["1 25544U 98067A   26088.50000000  .00016717  00000-0  10270-3 0  9003", "2 25544  51.6416 123.4567 0006789 45.6789 314.5678 15.5012345654321"]										
-};										
-										
-// リアルタイム軌道計算 & パス予測の更新										
-function updateSatelliteData() {										
-const satKey = document.getElementById('satSelect').value;										
-const tle = tleData[satKey];										
-if (!tle) return;										
-										
-const satrec = satellite.twoline2satrec(tle[0], tle[1]);										
-const now = new Date();										
-										
-// 現在位置の計算										
-const positionAndVelocity = satellite.propagate(satrec, now);										
-const gmst = satellite.gstime(now);										
-										
-if (positionAndVelocity.position) {										
-const positionGd = satellite.eciToGeodetic(positionAndVelocity.position, gmst);										
-const observerGd = {										
-longitude: satellite.degreesToRadians(observerLon),										
-latitude: satellite.degreesToRadians(observerLat),										
-height: observerAlt										
-};										
-const lookAngles = satellite.ecfToLookAngles(observerGd, satellite.eciToEcf(positionAndVelocity.position, gmst));										
-										
-const az = satellite.radiansToDegrees(lookAngles.azimuth).toFixed(1);										
-const el = satellite.radiansToDegrees(lookAngles.elevation).toFixed(1);										
-										
-document.getElementById('azVal').innerText = az;										
-document.getElementById('elVal').innerText = el;										
-}										
-										
-// 今後のパス予測（簡易シミュレーション計算）										
-let passHtml = "";										
-let passTime = new Date(now.getTime() + 25 * 60000); // 25分後										
-for (let i = 0; i < 3; i++) {										
-let aosStr = passTime.toISOString().slice(11, 16) + " UTC";										
-let melVal = (50 + i * 15) % 85;										
-let losTime = new Date(passTime.getTime() + 16 * 60000);										
-let losStr = losTime.toISOString().slice(11, 16) + " UTC";										
-										
-passHtml += `<tr><td>${aosStr}</td><td><b>${melVal}°</b></td><td>${losStr}</td></tr>`;										
-passTime = new Date(passTime.getTime() + 90 * 60000); // 次の周回										
-}										
-document.getElementById('passTableBody').innerHTML = passHtml;										
-}										
-										
-setInterval(updateSatelliteData, 2000);										
-updateSatelliteData();										
-										
-// QSOログ保存機能 (CSVファイルダウンロード)										
-function saveQso() {										
-const call = document.getElementById('callsignInput').value.trim();										
-const sat = document.getElementById('satSelect').value;										
-const mode = document.getElementById('logMode').value;										
-const rst = document.getElementById('logRst').value;										
-const band = document.getElementById('logBand').value;										
-										
-if (!call) {										
-alert('相手局のコールサインを入力してください');										
-return;										
-}										
-										
-const now = new Date();										
-const dateStr = now.toISOString().slice(0, 10);										
-const timeStr = now.toUTCString().slice(17, 22);										
-										
-const csvRow = `"${dateStr}","${timeStr}","${call}","${sat}","${band}","${mode}","${rst}","JCC:100111 (Ota-ku)"\n`;										
-										
-// ファイルとしてダウンロード生成										
-const blob = new Blob([csvRow], { type: 'text/csv;charset=utf-8;' });										
-const url = URL.createObjectURL(blob);										
-const a = document.createElement('a');										
-a.href = url;										
-a.download = `QSO_Log_${call}_${sat}.csv`;										
-document.body.appendChild(a);										
-a.click();										
-document.body.removeChild(a);										
-										
-document.getElementById('logStatus').innerText = `✅ ログを保存しました (${call} / ${sat})`;										
-document.getElementById('callsignInput').value = '';										
-}										
-										
-// Bluetooth 接続モック										
-document.getElementById('btConnectBtn').addEventListener('click', async () => {										
-try {										
-const device = await navigator.bluetooth.requestDevice({										
-filters: [{ services: ['0000ffe0-0000-1000-8000-00805f9b34fb'] }]										
-});										
-document.getElementById('btStatus').innerText = `接続中: ${device.name}`;										
-} catch (err) {										
-document.getElementById('btStatus').innerText = '接続キャンセルまたは失敗';										
-}										
-});										
-</script>										
-</body>										
-</html>										
+<!DOCTYPE html>				
+<html lang="ja">				
+<head>				
+<meta charset="UTF-8">				
+<meta name="viewport" content="width=device-width, initial-scale=1.0">				
+<title>ESP32 Bluetooth Connection Test</title>				
+<style>				
+body {				
+background-color: #121212;				
+color: #ffffff;				
+font-family: sans-serif;				
+text-align: center;				
+padding-top: 50px;				
+}				
+#connect-btn {				
+background-color: #00ff00;				
+color: #000000;				
+font-size: 20px;				
+font-weight: bold;				
+padding: 15px 30px;				
+border: none;				
+border-radius: 8px;				
+cursor: pointer;				
+}				
+#status {				
+margin-top: 20px;				
+font-size: 18px;				
+color: #ffaa00;				
+}				
+</style>				
+</head>				
+<body>				
+				
+<h1>ESP32 BLE 接続テスト</h1>				
+				
+<!-- 接続ボタン -->				
+<button id="connect-btn">Bluetooth 接続 (ESP32)</button>				
+<div id="status">ステータス: 未接続</div>				
+				
+<script>				
+const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";				
+				
+document.getElementById('connect-btn').addEventListener('click', async () => {				
+try {				
+document.getElementById('status').innerText = "ステータス: スキャン中...";				
+console.log('Bluetoothデバイスをスキャン中...');				
+				
+// ESP-CIV-Link を名前で直接指定してスキャン				
+const device = await navigator.bluetooth.requestDevice({				
+filters: [{ name: 'ESP-CIV-Link' }],				
+optionalServices: [SERVICE_UUID]				
+});				
+				
+document.getElementById('status').innerText = "ステータス: 接続中...";				
+console.log('GATTサーバーに接続中...');				
+const server = await device.gatt.connect();				
+				
+document.getElementById('status').innerText = "ステータス: 接続完了！";				
+alert('Bluetooth接続に成功しました！');				
+				
+// 切断されたときの処理				
+device.addEventListener('gattserverdisconnected', () => {				
+document.getElementById('status').innerText = "ステータス: 切断されました";				
+});				
+				
+} catch (error) {				
+console.error('エラー:', error);				
+document.getElementById('status').innerText = "ステータス: 接続失敗";				
+alert('接続エラー: ' + error);				
+}				
+});				
+</script>				
+				
+</body>				
+</html>				
