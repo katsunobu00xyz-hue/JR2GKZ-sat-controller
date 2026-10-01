@@ -1,75 +1,381 @@
-<!DOCTYPE html>				
-<html lang="ja">				
-<head>				
-<meta charset="UTF-8">				
-<meta name="viewport" content="width=device-width, initial-scale=1.0">				
-<title>ESP32 Bluetooth Connection Test</title>				
-<style>				
-body {				
-background-color: #121212;				
-color: #ffffff;				
-font-family: sans-serif;				
-text-align: center;				
-padding-top: 50px;				
-}				
-#connect-btn {				
-background-color: #00ff00;				
-color: #000000;				
-font-size: 20px;				
-font-weight: bold;				
-padding: 15px 30px;				
-border: none;				
-border-radius: 8px;				
-cursor: pointer;				
-}				
-#status {				
-margin-top: 20px;				
-font-size: 18px;				
-color: #ffaa00;				
-}				
-</style>				
-</head>				
-<body>				
-				
-<h1>ESP32 BLE 接続テスト</h1>				
-				
-<!-- 接続ボタン -->				
-<button id="connect-btn">Bluetooth 接続 (ESP32)</button>				
-<div id="status">ステータス: 未接続</div>				
-				
-<script>				
-const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";				
-				
-document.getElementById('connect-btn').addEventListener('click', async () => {				
-try {				
-document.getElementById('status').innerText = "ステータス: スキャン中...";				
-console.log('Bluetoothデバイスをスキャン中...');				
-				
-// ★フィルターを撤廃し、周辺の全デバイスを表示して選択させる				
-const device = await navigator.bluetooth.requestDevice({				
-acceptAllDevices: true,				
-optionalServices: [SERVICE_UUID]				
-});				
-				
-document.getElementById('status').innerText = "ステータス: 接続中...";				
-console.log('GATTサーバーに接続中...');				
-const server = await device.gatt.connect();				
-				
-document.getElementById('status').innerText = "ステータス: 接続完了！";				
-alert('Bluetooth接続に成功しました！');				
-				
-device.addEventListener('gattserverdisconnected', () => {				
-document.getElementById('status').innerText = "ステータス: 切断されました";				
-});				
-				
-} catch (error) {				
-console.error('エラー:', error);				
-document.getElementById('status').innerText = "ステータス: 接続失敗";				
-alert('接続エラー: ' + error);				
-}				
-});				
-</script>				
-				
-</body>				
-</html>				
-				
+<!DOCTYPE html>			
+<html lang="ja">			
+			
+<head>			
+			
+<meta charset="UTF-8">			
+			
+<meta name="viewport"			
+content="width=device-width, initial-scale=1.0">			
+			
+<title>JR2GKZ ESP32 CONTROL</title>			
+			
+<style>			
+			
+body {			
+background-color: #121212;			
+color: white;			
+font-family: sans-serif;			
+text-align: center;			
+padding: 25px;			
+}			
+			
+h1 {			
+font-size: 24px;			
+}			
+			
+button {			
+font-size: 18px;			
+font-weight: bold;			
+padding: 12px 20px;			
+margin: 6px;			
+border: none;			
+border-radius: 8px;			
+}			
+			
+#connect-btn {			
+background-color: #00ff00;			
+color: black;			
+}			
+			
+#status {			
+margin: 20px 0;			
+font-size: 18px;			
+color: #ffaa00;			
+}			
+			
+input {			
+font-size: 18px;			
+padding: 10px;			
+width: 60%;			
+}			
+			
+#send-btn {			
+background-color: #008cff;			
+color: white;			
+}			
+			
+#log {			
+margin-top: 25px;			
+background-color: #000000;			
+text-align: left;			
+padding: 15px;			
+min-height: 180px;			
+white-space: pre-wrap;			
+border-radius: 8px;			
+}			
+			
+</style>			
+			
+</head>			
+			
+<body>			
+			
+<h1>JR2GKZ ESP32 CONTROL</h1>			
+			
+<button id="connect-btn">			
+Bluetooth 接続			
+</button>			
+			
+<div id="status">			
+ステータス：未接続			
+</div>			
+			
+			
+<div>			
+			
+<button onclick="sendCommand('HELLO')">			
+HELLO送信			
+</button>			
+			
+<button onclick="sendCommand('TEST')">			
+TEST送信			
+</button>			
+			
+</div>			
+			
+			
+<div style="margin-top:20px;">			
+			
+<input			
+id="command"			
+type="text"			
+placeholder="コマンド入力"			
+>			
+			
+<button id="send-btn">			
+送信			
+</button>			
+			
+</div>			
+			
+			
+<div id="log">			
+通信ログ：			
+</div>			
+			
+			
+<script>			
+			
+const SERVICE_UUID =			
+6e400001-b5a3-f393-e0a9-e50e24dcca9e;			
+			
+const RX_UUID =			
+6e400002-b5a3-f393-e0a9-e50e24dcca9e;			
+			
+const TX_UUID =			
+6e400003-b5a3-f393-e0a9-e50e24dcca9e;			
+			
+			
+let device = null;			
+let rxCharacteristic = null;			
+let txCharacteristic = null;			
+			
+			
+function log(text) {			
+			
+const logElement =			
+document.getElementById("log");			
+			
+logElement.innerText +=			
+\n + text;			
+			
+console.log(text);			
+}			
+			
+			
+/* =========================			
+Bluetooth接続			
+#ERROR!			
+			
+document			
+.getElementById("connect-btn")			
+.addEventListener("click", async () => {			
+			
+try {			
+			
+document			
+.getElementById("status")			
+.innerText =			
+ステータス：スキャン中...;			
+			
+			
+device =			
+await navigator.bluetooth.requestDevice({			
+			
+filters: [			
+{			
+services: [SERVICE_UUID]			
+}			
+],			
+			
+optionalServices: [			
+SERVICE_UUID			
+]			
+			
+});			
+			
+			
+log(			
+デバイス発見： +			
+device.name			
+);			
+			
+			
+document			
+.getElementById("status")			
+.innerText =			
+ステータス：接続中...;			
+			
+			
+const server =			
+await device.gatt.connect();			
+			
+			
+log("GATT接続成功");			
+			
+			
+const service =			
+await server.getPrimaryService(			
+SERVICE_UUID			
+);			
+			
+			
+log("Service取得成功");			
+			
+			
+/* iPhone → ESP32 */			
+			
+rxCharacteristic =			
+await service.getCharacteristic(			
+RX_UUID			
+);			
+			
+			
+log("RX取得成功");			
+			
+			
+/* ESP32 → iPhone */			
+			
+txCharacteristic =			
+await service.getCharacteristic(			
+TX_UUID			
+);			
+			
+			
+log("TX取得成功");			
+			
+			
+/* ESP32からの通知を受信 */			
+			
+await txCharacteristic			
+.startNotifications();			
+			
+			
+txCharacteristic.addEventListener(			
+characteristicvaluechanged,			
+event => {			
+			
+const decoder =			
+new TextDecoder();			
+			
+const value =			
+decoder.decode(			
+event.target.value			
+);			
+			
+log(			
+ESP32 → iPhone :  +			
+value			
+);			
+			
+}			
+);			
+			
+			
+document			
+.getElementById("status")			
+.innerText =			
+ステータス：接続完了！;			
+			
+			
+log("BLE通信準備完了");			
+			
+			
+device.addEventListener(			
+gattserverdisconnected,			
+() => {			
+			
+document			
+.getElementById("status")			
+.innerText =			
+ステータス：切断;			
+			
+log("BLE切断");			
+			
+}			
+);			
+			
+			
+} catch(error) {			
+			
+console.error(error);			
+			
+document			
+.getElementById("status")			
+.innerText =			
+ステータス：接続失敗;			
+			
+			
+log(			
+ERROR:  +			
+error.name +			
+ /  +			
+error.message			
+);			
+			
+}			
+			
+});			
+			
+			
+/* =========================			
+ESP32へコマンド送信			
+#ERROR!			
+			
+async function sendCommand(command) {			
+			
+if (!rxCharacteristic) {			
+			
+alert(			
+先にBluetooth接続してください			
+);			
+			
+return;			
+			
+}			
+			
+			
+try {			
+			
+const encoder =			
+new TextEncoder();			
+			
+const data =			
+encoder.encode(command);			
+			
+			
+await rxCharacteristic.writeValue(			
+data			
+);			
+			
+			
+log(			
+iPhone → ESP32 :  +			
+command			
+);			
+			
+			
+} catch(error) {			
+			
+log(			
+送信エラー： +			
+error.message			
+);			
+			
+}			
+			
+}			
+			
+			
+/* =========================			
+入力欄から送信			
+#ERROR!			
+			
+document			
+.getElementById("send-btn")			
+.addEventListener("click", () => {			
+			
+const command =			
+document			
+.getElementById("command")			
+.value			
+.trim();			
+			
+			
+if (command.length === 0) {			
+return;			
+}			
+			
+			
+sendCommand(command);			
+			
+});			
+			
+			
+</script>			
+			
+</body>			
+			
+</html>			
+			
