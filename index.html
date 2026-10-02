@@ -1,124 +1,98 @@
-<!DOCTYPE html>		
-<html lang="ja">		
-<head>		
-<meta charset="UTF-8">		
-<meta name="viewport" content="width=device-width, initial-scale=1.0">		
-<title>ESP32 Bluetooth Connection Test</title>		
-		
-<style>		
-body {		
-background-color: #121212;		
-color: #ffffff;		
-font-family: sans-serif;		
-text-align: center;		
-padding-top: 50px;		
-}		
-		
-#connect-btn {		
-background-color: #00ff00;		
-color: #000000;		
-font-size: 20px;		
-font-weight: bold;		
-padding: 15px 30px;		
-border: none;		
-border-radius: 8px;		
-cursor: pointer;		
-}		
-		
-/* TESTボタン：最初は非表示 */		
-#test-btn {		
-display: none;		
-background-color: #008cff;		
-color: #ffffff;		
-font-size: 20px;		
-font-weight: bold;		
-padding: 15px 30px;		
-border: none;		
-border-radius: 8px;		
-cursor: pointer;		
-margin-top: 20px;		
-}		
-		
-#status {		
-margin-top: 20px;		
-font-size: 18px;		
-color: #ffaa00;		
-}		
-</style>		
-</head>		
-		
-<body>		
-		
-<h1>ESP32 BLE 接続テスト</h1>		
-		
-<button id="connect-btn">Bluetooth 接続 (ESP32)</button>		
-		
-<!-- 今回追加したボタン -->		
-<button id="test-btn">TEST</button>		
-		
-<div id="status">ステータス: 未接続</div>		
-		
-		
-<script>		
-		
-const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";		
-		
-document.getElementById('connect-btn').addEventListener('click', async () => {		
-		
-try {		
-		
-document.getElementById('status').innerText =		
-ステータス: スキャン中...;		
-		
-console.log('Bluetoothデバイスをスキャン中...');		
-		
-const device = await navigator.bluetooth.requestDevice({		
-filters: [{ services: [SERVICE_UUID] }],		
-optionalServices: [SERVICE_UUID]		
-});		
-		
-document.getElementById('status').innerText =		
-ステータス: 接続中...;		
-		
-console.log('GATTサーバーに接続中...');		
-		
-const server = await device.gatt.connect();		
-		
-document.getElementById('status').innerText =		
-ステータス: 接続完了！;		
-		
-		
-/*		
-今回追加した部分		
-Bluetooth接続成功後にTESTボタンを表示		
-*/		
-document.getElementById('test-btn').style.display =		
-inline-block';		
-		
-		
-alert('Bluetooth接続に成功しました！');		
-		
-device.addEventListener('gattserverdisconnected', () => {		
-		
-document.getElementById('status').innerText =		
-ステータス: 切断されました;		
-		
-document.getElementById('test-btn').style.display =		
-none';		
-});		
-		
-} catch (error) {		
-		
-console.error('エラー:', error);		
-		
-document.getElementById('status').innerText =		
-ステータス: 接続失敗;		
-		
-alert('接続エラー: ' + error);		
-}		
-});		
-		
-</script>		
-		
-</body>		
-</html>		
+<!DOCTYPE html>				
+<html lang="ja">				
+<head>				
+<meta charset="UTF-8">				
+<meta name="viewport" content="width=device-width, initial-scale=1.0">				
+<title>ESP32 Bluetooth Connection Test</title>				
+<style>				
+body {				
+background-color: #121212;				
+color: #ffffff;				
+font-family: sans-serif;				
+text-align: center;				
+padding-top: 50px;				
+}				
+				
+#connect-btn {				
+background-color: #00ff00;				
+color: #000000;				
+font-size: 20px;				
+font-weight: bold;				
+padding: 15px 30px;				
+border: none;				
+border-radius: 8px;				
+cursor: pointer;				
+}				
+				
+#status {				
+margin-top: 20px;				
+font-size: 18px;				
+color: #ffaa00;				
+}				
+</style>				
+</head>				
+				
+<body>				
+				
+<h1>ESP32 BLE 接続テスト</h1>				
+				
+<button id="connect-btn">Bluetooth 接続 (ESP32)</button>				
+				
+<div id="status">ステータス: 未接続</div>				
+				
+<script>				
+				
+const SERVICE_UUID =				
+6e400001-b5a3-f393-e0a9-e50e24dcca9e;				
+				
+document.getElementById('connect-btn').addEventListener('click', async () => {				
+				
+try {				
+				
+document.getElementById('status').innerText =				
+ステータス: スキャン中...;				
+				
+console.log('Bluetoothデバイスをスキャン中...');				
+				
+const device = await navigator.bluetooth.requestDevice({				
+filters: [{ services: [SERVICE_UUID] }],				
+optionalServices: [SERVICE_UUID]				
+});				
+				
+document.getElementById('status').innerText =				
+ステータス: 接続中...;				
+				
+console.log('GATTサーバーに接続中...');				
+				
+const server = await device.gatt.connect();				
+				
+document.getElementById('status').innerText =				
+ステータス: 接続完了！;				
+				
+alert('Bluetooth接続に成功しました！');				
+				
+device.addEventListener('gattserverdisconnected', () => {				
+				
+document.getElementById('status').innerText =				
+ステータス: 切断されました;				
+				
+});				
+				
+} catch (error) {				
+				
+console.error('エラー:', error);				
+				
+document.getElementById('status').innerText =				
+ステータス: 接続失敗;				
+				
+alert('接続エラー: ' + error);				
+				
+}				
+				
+});				
+				
+</script>				
+				
+</body>				
+</html>				
+				
