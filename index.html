@@ -2,10 +2,10 @@
 <html>			
 <body>			
 			
-<h1>BLE TEST 2</h1>			
+<h1>BLE TEST 3</h1>			
 			
 <button onclick="testBLE()">			
-Bluetooth検索			
+Bluetooth接続			
 </button>			
 			
 <script>			
@@ -17,6 +17,10 @@ acceptAllDevices: true
 			
 alert("見つかったデバイス: " + device.name);			
 			
+const server = await device.gatt.connect();			
+			
+alert("接続成功！");			
+			
 } catch (error) {			
 alert("エラー: " + error);			
 }			
@@ -25,4 +29,3 @@ alert("エラー: " + error);
 			
 </body>			
 </html>			
-			
