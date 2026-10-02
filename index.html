@@ -2,11 +2,26 @@
 <html>			
 <body>			
 			
-<h1>BLE TEST</h1>			
+<h1>BLE TEST 2</h1>			
 			
-<button onclick="alert(typeof navigator.bluetooth)">			
-Bluetoothを確認			
+<button onclick="testBLE()">			
+Bluetooth検索			
 </button>			
+			
+<script>			
+async function testBLE() {			
+try {			
+const device = await navigator.bluetooth.requestDevice({			
+acceptAllDevices: true			
+});			
+			
+alert("見つかったデバイス: " + device.name);			
+			
+} catch (error) {			
+alert("エラー: " + error);			
+}			
+}			
+</script>			
 			
 </body>			
 </html>			
