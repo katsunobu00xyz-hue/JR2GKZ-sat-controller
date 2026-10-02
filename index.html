@@ -1,12 +1,51 @@
-<!DOCTYPE html>			
-<html>			
-<body>			
-			
-<h1>JavaScript TEST</h1>			
-			
-<button onclick="alert('JavaScriptは動いています！')">			
-ボタンを押す			
-</button>			
-			
-</body>			
-</html>			
+<!DOCTYPE html>		
+<html lang="ja">		
+<head>		
+<meta charset="UTF-8">		
+<meta name="viewport" content="width=device-width, initial-scale=1.0">		
+<title>ESP32 Bluetooth Connection Test</title>		
+</head>		
+<body>		
+		
+<h1>ESP32 BLE 接続テスト</h1>		
+		
+<button id="connect-btn">Bluetooth 接続 (ESP32)</button>		
+		
+<div id="status">ステータス: 未接続</div>		
+		
+<script>		
+const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";		
+		
+document.getElementById('connect-btn').addEventListener('click', async () => {		
+		
+try {		
+document.getElementById('status').innerText =		
+ステータス: スキャン中...;		
+		
+const device = await navigator.bluetooth.requestDevice({		
+filters: [{ services: [SERVICE_UUID] }],		
+optionalServices: [SERVICE_UUID]		
+});		
+		
+document.getElementById('status').innerText =		
+ステータス: 接続中...;		
+		
+const server = await device.gatt.connect();		
+		
+document.getElementById('status').innerText =		
+ステータス: 接続完了！;		
+		
+} catch (error) {		
+		
+console.error(error);		
+		
+document.getElementById('status').innerText =		
+ステータス: 接続失敗;		
+		
+alert("接続エラー: " + error);		
+}		
+});		
+</script>		
+		
+</body>		
+</html>		
