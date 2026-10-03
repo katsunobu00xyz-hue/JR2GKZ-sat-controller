@@ -46,11 +46,11 @@ await server.getPrimaryService(SERVICE_UUID);
 			
 rxCharacteristic =			
 await service.getCharacteristic(RX_UUID);
-txCharacteristic =		
+
+await txCharacttxCharacteristic =		
 await service.getCharacteristic(		
 6e400003-b5a3-f393-e0a9-e50e24dcca9e		
-);		
-await txCharacteristic.startNotifications();
+);		eristic.startNotifications();
 txCharacteristic.addEventListener(		
 characteristicvaluechanged,		
 (event) => {		
