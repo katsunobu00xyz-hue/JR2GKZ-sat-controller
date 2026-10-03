@@ -1,31 +1,146 @@
-<!DOCTYPE html>		
-<html>		
-		
-<head>		
-<meta charset="UTF-8">		
-<title>JR2GKZ TEST</title>		
-</head>		
-		
-<body>		
-		
-<h1>JR2GKZ TEST</h1>		
-		
-<button onclick="testButton()">		
-テストボタン		
-</button>		
-		
-<script>		
-		
-function testButton() {		
-		
-alert("JavaScriptは動いています！");		
-		
-}		
-		
-</script>		
-		
-</body>		
-		
-</html>		
-		
-		
+<!DOCTYPE html>				
+<html>				
+				
+<head>				
+<meta charset="UTF-8">				
+<title>JR2GKZ TEST</title>				
+</head>				
+				
+<body>				
+				
+<h1>JR2GKZ TEST</h1>				
+				
+<button onclick="testButton()">				
+テストボタン				
+</button>				
+				
+<script>				
+				
+function testButton() {				
+				
+alert("JavaScriptは動いています！");				
+				
+}				
+				
+</script>				
+				
+</body>				
+				
+</html>				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+<!DOCTYPE html>				
+<html>				
+<body>				
+				
+<h1>BLE TEST 5</h1>				
+				
+<button onclick="testBLE()">				
+Bluetooth接続				
+</button>				
+				
+<br><br>				
+				
+<button onclick="sendHello()">				
+HELLO送信				
+</button>				
+				
+<br><br>				
+				
+<div id="received">				
+ESP32からの受信：なし				
+</div>				
+				
+<script>				
+				
+const SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";				
+const RX_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";				
+const TX_UUID = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";				
+				
+let rxCharacteristic = null;				
+let txCharacteristic = null;				
+				
+				
+async function testBLE() {				
+				
+try {				
+				
+const device = await navigator.bluetooth.requestDevice({				
+acceptAllDevices: true,				
+optionalServices: [SERVICE_UUID]				
+});				
+				
+alert("見つかったデバイス: " + device.name);				
+				
+const server = await device.gatt.connect();				
+				
+const service =				
+await server.getPrimaryService(SERVICE_UUID);				
+				
+rxCharacteristic =				
+await service.getCharacteristic(RX_UUID);				
+				
+txCharacteristic =				
+await service.getCharacteristic(TX_UUID);				
+				
+				
+txCharacteristic.addEventListener(				
+characteristicvaluechanged,				
+function(event) {				
+				
+const value =				
+new TextDecoder().decode(				
+event.target.value				
+);				
+				
+document.getElementById("received").innerText =				
+ESP32からの受信： + value;				
+				
+}				
+);				
+				
+				
+await txCharacteristic.startNotifications();				
+				
+				
+alert("接続成功！");				
+				
+} catch (error) {				
+				
+alert("エラー: " + error);				
+				
+}				
+				
+}				
+				
+				
+async function sendHello() {				
+				
+if (!rxCharacteristic) {				
+				
+alert("先にBluetooth接続してください");				
+				
+return;				
+}				
+				
+const data =				
+new TextEncoder().encode("HELLO");				
+				
+await rxCharacteristic.writeValue(data);				
+				
+alert("HELLOを送信しました！");				
+				
+}				
+				
+</script>				
+				
+</body>				
+</html>				
+				
